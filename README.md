@@ -10,7 +10,9 @@ snake/
 ├── requirements.txt
 └── snake/
     ├── config.py           # Grid size, FPS, colors
-    ├── game.py             # Game rules, state, scoring
+    ├── game.py             # Game rules, state, scoring, modes
+    ├── modes.py            # Solo, 2-player, vs computer
+    ├── ai.py               # Computer opponent logic
     ├── renderer.py         # Pygame drawing (grid, snake, food, HUD)
     └── entities/
         ├── snake.py        # Snake movement, growth, self-collision
@@ -49,13 +51,25 @@ pip install -r requirements.txt
 python3 main.py
 ```
 
+## Game modes
+
+| Mode | Description |
+|------|-------------|
+| **1 Player** | Classic solo snake |
+| **2 Player** | Local duel — P1 uses arrows, P2 uses WASD |
+| **Player vs Computer** | You vs a simple AI opponent |
+
+At launch, pick a mode with **1 / 2 / 3**, **Up/Down + Enter**, or **Space**.
+
 ## Controls
 
 | Key | Action |
 |-----|--------|
-| Arrow keys | Move / start |
+| Arrow keys | Player 1 move / start (solo & vs computer) |
+| W A S D | Player 2 move / start (2 player only) |
 | P | Pause / resume |
 | R | Restart after game over |
+| Esc | Return to mode menu |
 
 ## Next steps
 

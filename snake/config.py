@@ -23,8 +23,11 @@ class Colors:
     grid: tuple[int, int, int] = (30, 30, 30)
     snake: tuple[int, int, int] = (76, 175, 80)
     snake_head: tuple[int, int, int] = (129, 199, 132)
+    opponent_snake: tuple[int, int, int] = (66, 165, 245)
+    opponent_head: tuple[int, int, int] = (100, 181, 246)
     food: tuple[int, int, int] = (244, 67, 54)
     text: tuple[int, int, int] = (240, 240, 240)
+    menu_highlight: tuple[int, int, int] = (255, 193, 7)
 
 
 DEFAULT_GAME_CONFIG = GameConfig()
