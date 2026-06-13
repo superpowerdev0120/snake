@@ -2,6 +2,7 @@
 
 import pygame
 
+from snake.cartoon import draw_cartoon_food, draw_cartoon_snake
 from snake.config import Colors, GameConfig
 from snake.game import Game, GamePhase
 from snake.modes import GameMode
@@ -24,11 +25,11 @@ class Renderer:
 
     def draw_menu(self, selected: GameMode) -> None:
         self.screen.fill(self.colors.background)
-        title = self._title_font.render("Snake", True, self.colors.text)
+        title = self._title_font.render("Snake", True, self.colors.menu_highlight)
         title_rect = title.get_rect(center=(self.screen.get_width() // 2, 80))
         self.screen.blit(title, title_rect)
 
-        subtitle = self._font.render("Select game mode", True, self.colors.text)
+        subtitle = self._font.render("Cartoon mode — select game mode", True, self.colors.text)
         subtitle_rect = subtitle.get_rect(center=(self.screen.get_width() // 2, 120))
         self.screen.blit(subtitle, subtitle_rect)
 
@@ -65,31 +66,31 @@ class Renderer:
         height = self.config.grid.rows * cell
 
         for x in range(0, width, cell):
-            pygame.draw.line(self.screen, self.colors.grid, (x, 0), (x, height))
+            pygame.draw.line(self.screen, self.colors.grid, (x, 0), (x, height), 1)
         for y in range(0, height, cell):
-            pygame.draw.line(self.screen, self.colors.grid, (0, y), (width, y))
-
-    def _cell_rect(self, x: int, y: int) -> pygame.Rect:
-        cell = self.config.grid.cell_size
-        return pygame.Rect(x * cell, y * cell, cell, cell)
-
-    def _snake_colors(self, player_index: int) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
-        if player_index == 0:
-            return self.colors.snake, self.colors.snake_head
-        return self.colors.opponent_snake, self.colors.opponent_head
+            pygame.draw.line(self.screen, self.colors.grid, (0, y), (width, y), 1)
 
     def _draw_snakes(self, game: Game) -> None:
+        cell = self.config.grid.cell_size
         for index, player in enumerate(game.players):
             if not player.alive:
                 continue
-            body_color, head_color = self._snake_colors(index)
-            for segment_index, (x, y) in enumerate(player.snake.body):
-                color = head_color if segment_index == 0 else body_color
-                pygame.draw.rect(self.screen, color, self._cell_rect(x, y))
+            palette = self.colors.player_palette(index)
+            draw_cartoon_snake(
+                self.screen,
+                player.snake.body,
+                player.snake.direction,
+                palette,
+                cell,
+            )
 
     def _draw_food(self, game: Game) -> None:
-        x, y = game.food.position
-        pygame.draw.rect(self.screen, self.colors.food, self._cell_rect(x, y))
+        draw_cartoon_food(
+            self.screen,
+            game.food.position,
+            self.colors.food_palette(),
+            self.config.grid.cell_size,
+        )
 
     def _draw_hud(self, game: Game) -> None:
         if game.mode is GameMode.SOLO:
@@ -132,4 +133,8 @@ class Renderer:
                 self.screen.get_height() // 2,
             )
         )
-        self.screen.blit(surface, rect)
+        overlay = pygame.Surface((rect.width + 24, rect.height + 16), pygame.SRCALPHA)
+        overlay.fill((24, 36, 28, 180))
+        overlay.blit(surface, (12, 8))
+        overlay_rect = overlay.get_rect(center=rect.center)
+        self.screen.blit(overlay, overlay_rect)
