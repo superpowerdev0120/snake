@@ -95,10 +95,19 @@ def run_game(mode: GameMode, screen: pygame.Surface, clock: pygame.time.Clock, f
 
 def run() -> None:
     config = DEFAULT_GAME_CONFIG
-    grid = config.grid
 
-    pygame.init()
-    screen = pygame.display.set_mode((grid.cols * grid.cell_size, grid.rows * grid.cell_size))
+    try:
+        pygame.init()
+        try:
+            pygame.mixer.init(frequency=22050, size=-8, channels=1, buffer=512)
+        except pygame.error:
+            pass
+        screen = pygame.display.set_mode((config.screen_width, config.screen_height))
+    except pygame.error as exc:
+        print(f"Unable to start display: {exc}")
+        print("Run this game on a machine with a graphical desktop session.")
+        sys.exit(1)
+
     pygame.display.set_caption(config.title)
     clock = pygame.time.Clock()
 

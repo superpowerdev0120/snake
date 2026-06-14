@@ -7,6 +7,7 @@ from snake.ai import choose_direction
 from snake.config import GameConfig, GridConfig
 from snake.entities import Direction, Food, Snake
 from snake.modes import GameMode
+from snake.ring import is_in_ring
 
 
 class GamePhase(Enum):
@@ -27,8 +28,14 @@ class Player:
 
 @dataclass
 class GameState:
-    phase: str = GamePhase.READY
+    phase: GamePhase = GamePhase.READY
     winner: str | None = None
+
+
+@dataclass
+class GameEvent:
+    kind: str
+    cell: tuple[int, int] | None = None
 
 
 class Game:
@@ -40,6 +47,7 @@ class Game:
         self.state = GameState()
         self.players: list[Player] = []
         self.food = Food(self.config.grid)
+        self._events: list[GameEvent] = []
         self._reset_entities()
 
     def _reset_entities(self) -> None:
@@ -49,38 +57,26 @@ class Game:
         self.food.respawn(self._occupied_cells())
 
     def _create_players(self, grid: GridConfig) -> list[Player]:
-        mid_y = grid.rows // 2
+        ring = grid.ring
+        cx, cy = ring.center_col, ring.center_row
+
+        def spawn(x: int, y: int, direction: Direction) -> Snake:
+            if not is_in_ring(x, y, grid):
+                raise ValueError(f"Spawn cell ({x}, {y}) is outside the ring")
+            return Snake(grid, start=(x, y), direction=direction)
 
         if self.mode is GameMode.SOLO:
-            return [
-                Player(
-                    snake=Snake(grid, start=(grid.cols // 2, mid_y), direction=Direction.RIGHT),
-                    name="Player",
-                )
-            ]
+            return [Player(spawn(cx, cy, Direction.RIGHT), name="Player")]
 
         if self.mode is GameMode.TWO_PLAYER:
             return [
-                Player(
-                    snake=Snake(grid, start=(5, mid_y), direction=Direction.RIGHT),
-                    name="Player 1",
-                ),
-                Player(
-                    snake=Snake(grid, start=(grid.cols - 6, mid_y), direction=Direction.LEFT),
-                    name="Player 2",
-                ),
+                Player(spawn(cx - 7, cy, Direction.RIGHT), name="Player 1"),
+                Player(spawn(cx + 7, cy, Direction.LEFT), name="Player 2"),
             ]
 
         return [
-            Player(
-                snake=Snake(grid, start=(5, mid_y), direction=Direction.RIGHT),
-                name="You",
-            ),
-            Player(
-                snake=Snake(grid, start=(grid.cols - 6, mid_y), direction=Direction.LEFT),
-                name="Computer",
-                is_ai=True,
-            ),
+            Player(spawn(cx - 7, cy, Direction.RIGHT), name="You"),
+            Player(spawn(cx + 7, cy, Direction.LEFT), name="Computer", is_ai=True),
         ]
 
     def _occupied_cells(self) -> set[tuple[int, int]]:
@@ -95,6 +91,7 @@ class Game:
     def start(self) -> None:
         self.state.phase = GamePhase.RUNNING
         self.state.winner = None
+        self._events.append(GameEvent("start"))
 
     def pause(self) -> None:
         if self.state.phase is GamePhase.RUNNING:
@@ -107,6 +104,7 @@ class Game:
     def restart(self) -> None:
         self._reset_entities()
         self.state = GameState(phase=GamePhase.RUNNING)
+        self._events.append(GameEvent("start"))
 
     def handle_direction(self, player_index: int, direction: Direction) -> None:
         if self.state.phase is GamePhase.READY:
@@ -169,9 +167,11 @@ class Game:
         if not eaters:
             return
 
+        eat_cell = self.food.position
         for player in eaters:
             player.snake.schedule_growth()
             player.score += 1
+        self._events.append(GameEvent("eat", eat_cell))
         self.food.respawn(self._occupied_cells())
 
     def _check_game_over(self) -> None:
@@ -202,9 +202,12 @@ class Game:
         return "Draw"
 
     def _is_out_of_bounds(self, cell: tuple[int, int]) -> bool:
-        x, y = cell
-        grid = self.config.grid
-        return x < 0 or y < 0 or x >= grid.cols or y >= grid.rows
+        return not is_in_ring(cell[0], cell[1], self.config.grid)
+
+    def consume_events(self) -> list[GameEvent]:
+        events = self._events
+        self._events = []
+        return events
 
     @property
     def score(self) -> int:
