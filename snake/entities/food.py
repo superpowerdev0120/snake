@@ -3,6 +3,7 @@
 import random
 
 from snake.config import GridConfig
+from snake.ring import iter_ring_cells
 
 
 class Food:
@@ -19,12 +20,7 @@ class Food:
 
     def respawn(self, occupied: set[tuple[int, int]] | None = None) -> None:
         blocked = occupied or set()
-        free_cells = [
-            (x, y)
-            for x in range(self._grid.cols)
-            for y in range(self._grid.rows)
-            if (x, y) not in blocked
-        ]
+        free_cells = [cell for cell in iter_ring_cells(self._grid) if cell not in blocked]
         if not free_cells:
             raise RuntimeError("No free cells available for food")
         self._position = random.choice(free_cells)

@@ -4,6 +4,7 @@ import random
 
 from snake.config import GridConfig
 from snake.entities import Direction, Snake
+from snake.ring import is_in_ring
 
 
 def _is_safe(
@@ -15,7 +16,7 @@ def _is_safe(
 ) -> bool:
     dx, dy = direction.delta
     x, y = head[0] + dx, head[1] + dy
-    if x < 0 or y < 0 or x >= grid.cols or y >= grid.rows:
+    if not is_in_ring(x, y, grid):
         return False
     if (x, y) in snake.body:
         return False
